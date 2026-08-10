@@ -1,0 +1,6 @@
+{
+  "name": "Yacob Tech Academy",
+  "description": "Ethiopian Tech Academy Platform featuring Fee Receipt Payment Verification (CBE, Telebirr), Admin Approval Workflow, Ask a Mentor Floating Live Chat, AI Tutoring, and Downloadable Official Certificates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
