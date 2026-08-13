@@ -19,9 +19,10 @@ import {
   ThumbsUp,
   Check,
 } from "lucide-react";
-import { Course, CourseReview } from "../types";
+import { Course, CourseReview, User, QuizResult } from "../types";
 import { AskMentorModal } from "./AskMentorModal";
 import { CourseProgress } from "./CourseProgress";
+import { CourseQuiz } from "./CourseQuiz";
 
 interface CourseDetailModalProps {
   course: Course | null;
@@ -31,6 +32,8 @@ interface CourseDetailModalProps {
   onViewCertificate: () => void;
   completedCourseIds?: string[];
   onToggleCompleteCourse?: (courseId: string) => void;
+  user?: User | null;
+  onSaveQuizResult?: (result: QuizResult) => void;
 }
 
 export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
@@ -41,12 +44,15 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
   onViewCertificate,
   completedCourseIds = [],
   onToggleCompleteCourse,
+  user,
+  onSaveQuizResult,
 }) => {
   if (!course) return null;
 
   const [activeTab, setActiveTab] = useState<"overview" | "curriculum" | "instructor" | "reviews">("overview");
   const [playingVideo, setPlayingVideo] = useState(false);
   const [showAskMentorModal, setShowAskMentorModal] = useState(false);
+  const [activeQuizLesson, setActiveQuizLesson] = useState<{ title: string; id?: string } | null>(null);
 
   // Reviews state
   const [reviews, setReviews] = useState<CourseReview[]>([]);
@@ -347,7 +353,16 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
                               )}
                               {l.title}
                             </span>
-                            <span className="text-gray-400">{l.duration}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-400">{l.duration}</span>
+                              <button
+                                onClick={() => setActiveQuizLesson({ title: l.title, id: l.id })}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 hover:bg-emerald-200 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 font-extrabold text-[10px] flex items-center gap-1 transition-all"
+                                title="Take Lesson Quiz"
+                              >
+                                <span>Quiz 📝</span>
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -624,6 +639,22 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
       {/* Embedded Ask Mentor Modal */}
       {showAskMentorModal && (
         <AskMentorModal course={course} onClose={() => setShowAskMentorModal(false)} />
+      )}
+
+      {/* Embedded Lesson Quiz Modal */}
+      {activeQuizLesson && (
+        <CourseQuiz
+          course={course}
+          lessonTitle={activeQuizLesson.title}
+          lessonId={activeQuizLesson.id}
+          user={user || null}
+          onSaveResult={(res) => {
+            if (onSaveQuizResult) {
+              onSaveQuizResult(res);
+            }
+          }}
+          onClose={() => setActiveQuizLesson(null)}
+        />
       )}
     </>
   );

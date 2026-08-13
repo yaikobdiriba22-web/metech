@@ -947,6 +947,70 @@ Structure your response strictly as JSON matching this schema:
     }
   });
 
+  // POST /api/ai-lesson-quiz
+  app.post("/api/ai-lesson-quiz", async (req, res) => {
+    try {
+      const { courseTitle, lessonTitle, level } = req.body;
+      const ai = getGenAI();
+
+      const prompt = `You are a Senior Technical Instructor at Yacob Tech Academy.
+Create 5 interactive multiple-choice quiz questions to test student comprehension after finishing the lesson "${lessonTitle}" in the course "${courseTitle}" (${level || "Intermediate"} level).
+
+Requirements for each question:
+- Clear, practical question testing core concepts covered in "${lessonTitle}".
+- Exactly 4 distinct multiple-choice options.
+- Zero-based index (0, 1, 2, or 3) of the correct answer.
+- Concise, clear explanation of why the correct answer is right and why it matters in practical software development.
+
+Format as JSON object with key "questions".`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              questions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    options: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
+                    correctAnswerIndex: { type: Type.INTEGER },
+                    explanation: { type: Type.STRING },
+                  },
+                  required: [
+                    "question",
+                    "options",
+                    "correctAnswerIndex",
+                    "explanation",
+                  ],
+                },
+              },
+            },
+            required: ["questions"],
+          },
+        },
+      });
+
+      const jsonText = response.text || "{}";
+      const data = JSON.parse(jsonText);
+      res.json({ questions: data.questions || [] });
+    } catch (err: any) {
+      console.error("AI Lesson Quiz generation error:", err);
+      res.status(500).json({
+        error: "Failed to generate AI lesson quiz",
+        details: err?.message || String(err),
+      });
+    }
+  });
+
   // Vite Integration
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -118,6 +118,19 @@ export interface QuizQuestion {
   explanation: string;
 }
 
+export interface QuizResult {
+  id: string;
+  courseId?: string;
+  courseTitle?: string;
+  lessonId?: string;
+  lessonTitle?: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  passed: boolean;
+  completedAt: string;
+}
+
 export interface CodeReviewResult {
   score: number;
   summary: string;
@@ -157,6 +170,7 @@ export interface User {
   phone?: string;
   address?: string;
   lastQuizCompletedDate?: string;
+  quizResults?: QuizResult[];
   emailNotifications?: {
     courseApproval: boolean;
     newCourses: boolean;

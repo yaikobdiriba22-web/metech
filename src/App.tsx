@@ -35,9 +35,11 @@ import {
   PRICING_PLANS,
   FAQS,
 } from "./data/initialData";
-import { Course, User, PricingPlan, PaymentReceipt } from "./types";
+import { Course, User, PricingPlan, PaymentReceipt, QuizResult } from "./types";
+import { useToast } from "./context/ToastContext";
 
 export default function App() {
+  const { toast } = useToast();
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return (
       window.matchMedia &&
@@ -209,11 +211,22 @@ export default function App() {
   };
 
   const handleToggleWishlist = (courseId: string) => {
+    const isAdding = !wishlistIds.includes(courseId);
     setWishlistIds((prev) =>
-      prev.includes(courseId)
-        ? prev.filter((id) => id !== courseId)
-        : [...prev, courseId]
+      isAdding ? [...prev, courseId] : prev.filter((id) => id !== courseId)
     );
+    const targetCourse = coursesList.find((c) => c.id === courseId);
+    if (isAdding) {
+      toast.info(
+        "Saved to Wishlist 💖",
+        `"${targetCourse?.title || "Course"}" added to your saved favorites.`
+      );
+    } else {
+      toast.info(
+        "Removed from Wishlist",
+        `"${targetCourse?.title || "Course"}" removed from your favorites.`
+      );
+    }
   };
 
   const getEnrollmentStatus = (courseId: string): "approved" | "pending_approval" | "not_enrolled" => {
@@ -228,6 +241,7 @@ export default function App() {
     if (status === "approved") {
       // Already enrolled, open details or resume
       setSelectedCourse(course);
+      toast.info("Welcome Back! 📖", `Opening curriculum for ${course.title}`);
     } else {
       // Fee payment required -> Open payment receipt modal
       setShowPaymentModalForCourse(course);
@@ -240,6 +254,11 @@ export default function App() {
     if (!enrolledCourseIds.includes(newReceipt.courseId)) {
       setEnrolledCourseIds((curr) => [...curr, newReceipt.courseId]);
     }
+    toast.success(
+      "Enrollment Successful! 🎉",
+      `Payment submitted for "${newReceipt.courseTitle}". Full access unlocked!`,
+      { duration: 6000 }
+    );
     fetch("/api/receipts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -250,7 +269,7 @@ export default function App() {
   const handleApproveReceipt = (receiptId: string) => {
     const target = receipts.find((r) => r.id === receiptId);
     if (target) {
-      const toast: EmailToast = {
+      const emailToast: EmailToast = {
         id: `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         studentName: target.studentName,
         studentEmail: target.studentEmail,
@@ -259,7 +278,11 @@ export default function App() {
         transactionRef: target.transactionRef,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
-      setEmailToasts((prev) => [toast, ...prev]);
+      setEmailToasts((prev) => [emailToast, ...prev]);
+      toast.success(
+        "Payment Approved! ✅",
+        `Access granted to ${target.studentName} for "${target.courseTitle}".`
+      );
     }
 
     setReceipts((prev) =>
@@ -347,8 +370,45 @@ export default function App() {
       setShowAuthModal(true);
     } else {
       setUser((prev) => (prev ? { ...prev, plan: plan.id as any } : null));
-      alert(`Success! You have upgraded to the ${plan.name} plan.`);
+      toast.achievement(
+        "Plan Upgraded! 🚀",
+        `Success! You have unlocked full access with the ${plan.name} plan.`
+      );
     }
+  };
+
+  const handleSaveQuizResult = (result: QuizResult) => {
+    setUser((prev) => {
+      if (!prev) {
+        const guestUser: User = {
+          id: "usr-student-demo",
+          name: "Yaikob Diriba",
+          email: "yaikobdiriba22@gmail.com",
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+          role: "Student",
+          plan: "Pro",
+          enrolledCourseIds: ["course-1"],
+          wishlistCourseIds: [],
+          completedCourseIds: [],
+          quizResults: [result],
+          streakPoints: result.passed ? 170 : 150,
+          lastQuizCompletedDate: new Date().toISOString(),
+        };
+        return guestUser;
+      }
+
+      const existingResults = prev.quizResults || [];
+      const updatedResults = [result, ...existingResults];
+      const addedPoints = result.passed ? 20 : 5;
+      const updatedPoints = (prev.streakPoints || 150) + addedPoints;
+
+      return {
+        ...prev,
+        quizResults: updatedResults,
+        streakPoints: updatedPoints,
+        lastQuizCompletedDate: new Date().toISOString(),
+      };
+    });
   };
 
   const pendingCount = receipts.filter((r) => r.status === "pending").length;
@@ -479,6 +539,8 @@ export default function App() {
               : [...user.completedCourseIds, courseId];
             setUser({ ...user, completedCourseIds: updated });
           }}
+          user={user}
+          onSaveQuizResult={handleSaveQuizResult}
         />
       )}
 

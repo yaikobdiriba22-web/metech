@@ -202,8 +202,8 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
         {/* Main Glassmorphic Interactive Console */}
         <div className="bg-gray-900/80 border border-gray-800 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl">
           {/* Top Console Navigation */}
-          <div className="px-6 py-4 border-b border-gray-800 bg-gray-950/60 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-800 bg-gray-950/60 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap overflow-x-auto max-w-full pb-1 sm:pb-0">
               <button
                 onClick={() => setActiveTab("chat")}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${

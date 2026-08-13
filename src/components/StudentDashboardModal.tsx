@@ -877,6 +877,76 @@ export const StudentDashboardModal: React.FC<StudentDashboardModalProps> = ({
               </div>
 
               <DailyQuizWidget user={user} courses={courses} onQuizCompleted={handleQuizCompleted} />
+
+              {/* Lesson Quiz History & Stored Results */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-amber-400" />
+                    <div>
+                      <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">
+                        Stored Lesson Quiz History & Performance
+                      </h4>
+                      <p className="text-[11px] text-gray-500">
+                        Interactive multiple-choice quiz scores saved directly to your profile
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold text-[10px]">
+                    {user.quizResults?.length || 0} Quizzes Completed
+                  </span>
+                </div>
+
+                {!user.quizResults || user.quizResults.length === 0 ? (
+                  <div className="p-6 text-center rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-800 text-gray-500 space-y-1">
+                    <Brain className="w-7 h-7 text-gray-400 mx-auto mb-1" />
+                    <p className="font-bold text-xs text-gray-800 dark:text-gray-200">No course lesson quizzes completed yet.</p>
+                    <p className="text-[11px] text-gray-500">
+                      Open any enrolled course syllabus and click "Quiz 📝" next to a lesson to test your knowledge!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {user.quizResults.map((res) => (
+                      <div
+                        key={res.id}
+                        className="p-3.5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                      >
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-gray-900 dark:text-white">
+                              {res.lessonTitle}
+                            </span>
+                            <span
+                              className={`px-2 py-0.2 rounded-full text-[9px] font-black uppercase ${
+                                res.passed
+                                  ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40"
+                                  : "bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-300/40"
+                              }`}
+                            >
+                              {res.passed ? "Passed 🎉" : "Failed"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500">
+                            {res.courseTitle} • Taken on {res.completedAt}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            <span className="font-mono font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
+                              {res.score}/{res.totalQuestions}
+                            </span>
+                            <span className="text-[10px] text-gray-400 ml-1 font-mono">
+                              ({res.percentage}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
