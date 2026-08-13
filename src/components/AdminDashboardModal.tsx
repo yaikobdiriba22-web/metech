@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -42,6 +42,7 @@ import {
   BarChart3,
   PieChart as PieChartIcon,
   Calendar,
+  Download,
 } from "lucide-react";
 import { PaymentReceipt, Course, User } from "../types";
 
@@ -93,9 +94,109 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   >("pending");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Export payment receipts summary to CSV file
+  const handleExportCSV = () => {
+    if (!receipts || receipts.length === 0) return;
+    const headers = [
+      "Receipt ID",
+      "Student Name",
+      "Student Email",
+      "Course Title",
+      "Payment Method",
+      "Transaction Ref",
+      "Amount ETB",
+      "Status",
+      "Submitted At",
+    ];
+
+    const csvRows = receipts.map((r) => [
+      `"${r.id}"`,
+      `"${(r.studentName || "").replace(/"/g, '""')}"`,
+      `"${(r.studentEmail || "").replace(/"/g, '""')}"`,
+      `"${(r.courseTitle || "").replace(/"/g, '""')}"`,
+      `"${(r.paymentMethod || "").replace(/"/g, '""')}"`,
+      `"${(r.transactionRef || "").replace(/"/g, '""')}"`,
+      r.amountEtb,
+      `"${r.status}"`,
+      `"${r.submittedAt}"`,
+    ]);
+
+    const csvContent = [headers.join(","), ...csvRows.map((row) => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `payment_receipts_summary_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Course management state
   const [showAddCourseForm, setShowAddCourseForm] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+
+  // Registered students management state
+  const [studentsList, setStudentsList] = useState<User[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [studentFilter, setStudentFilter] = useState<"all" | "pending" | "approved">("pending");
+  const [studentSearch, setStudentSearch] = useState("");
+
+  const fetchStudents = async () => {
+    setStudentsLoading(true);
+    try {
+      const res = await fetch("/api/students");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.students && data.students.length > 0) {
+          setStudentsList(data.students);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Using fallback students store:", err);
+    } finally {
+      setStudentsLoading(false);
+    }
+
+    // Fallback if API returns no students
+    setStudentsList([]);
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const handleApproveStudent = async (studentId: string, isApproved: boolean) => {
+    try {
+      const res = await fetch(`/api/students/${studentId}/approve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isApproved }),
+      });
+      if (res.ok) {
+        setStudentsList((prev) =>
+          prev.map((s) => (s.id === studentId ? { ...s, isApproved } : s))
+        );
+      }
+    } catch (err) {
+      console.error("Error updating student approval:", err);
+    }
+  };
+
+  const handleDeleteStudent = async (studentId: string) => {
+    try {
+      const res = await fetch(`/api/students/${studentId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setStudentsList((prev) => prev.filter((s) => s.id !== studentId));
+      }
+    } catch (err) {
+      console.error("Error deleting student:", err);
+    }
+  };
 
   // New Course Form state
   const [newCourseTitle, setNewCourseTitle] = useState("");
@@ -458,6 +559,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                     />
                   </div>
+
+                  <button
+                    onClick={handleExportCSV}
+                    className="px-3 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shrink-0 transition-colors"
+                    title="Export payment receipts summary to CSV"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export CSV
+                  </button>
 
                   <button
                     onClick={() => setShowManualPayModal(true)}
@@ -838,68 +947,242 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: STUDENT & ENROLLMENT ACCESS MANAGEMENT */}
+          {/* TAB 3: STUDENT REGISTRATION APPROVALS & COURSE ACCESS MANAGEMENT */}
           {activeTab === "students" && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            <div className="space-y-6">
+              {/* SECTION A: STUDENT REGISTRATION APPROVALS */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <h3 className="font-extrabold text-base text-gray-900 dark:text-white flex items-center gap-2">
+                      <UserCheck className="w-5 h-5 text-emerald-500" />
+                      Student Registration & Approval Workflow
+                    </h3>
+                    <p className="text-gray-500 text-xs">
+                      Newly registered students require Admin verification before gaining complete platform access.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                    <button
+                      onClick={fetchStudents}
+                      className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                    >
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filters & Search */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900 p-1 rounded-xl w-full sm:w-auto">
+                    <button
+                      onClick={() => setStudentFilter("pending")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        studentFilter === "pending"
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      Pending Approval ({studentsList.filter((s) => !s.isApproved && s.role !== "Admin").length})
+                    </button>
+                    <button
+                      onClick={() => setStudentFilter("approved")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        studentFilter === "approved"
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Approved
+                    </button>
+                    <button
+                      onClick={() => setStudentFilter("all")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        studentFilter === "all"
+                          ? "bg-gray-900 dark:bg-gray-700 text-white shadow-sm"
+                          : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                      }`}
+                    >
+                      All ({studentsList.length})
+                    </button>
+                  </div>
+
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Students List Grid */}
+                <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                  {studentsList
+                    .filter((s) => {
+                      if (studentFilter === "pending") return !s.isApproved && s.role !== "Admin";
+                      if (studentFilter === "approved") return s.isApproved || s.role === "Admin";
+                      return true;
+                    })
+                    .filter((s) => {
+                      if (!studentSearch) return true;
+                      const q = studentSearch.toLowerCase();
+                      return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q);
+                    })
+                    .map((s) => {
+                      const isApproved = s.isApproved || s.role === "Admin";
+                      return (
+                        <div
+                          key={s.id || s.email}
+                          className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-colors hover:border-emerald-500/40"
+                        >
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={s.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"}
+                              alt={s.name}
+                              className="w-10 h-10 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">
+                                  {s.name}
+                                </h4>
+                                <span className="px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-800 text-[10px] font-bold text-gray-600 dark:text-gray-300">
+                                  {s.role}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500">{s.email}</p>
+                              {s.registeredAt && (
+                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                  Registered: {s.registeredAt}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+                            <div>
+                              {isApproved ? (
+                                <span className="px-2.5 py-1 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs flex items-center gap-1 border border-emerald-500/30">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                  Approved
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 font-extrabold text-xs flex items-center gap-1 border border-amber-500/30 animate-pulse">
+                                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                  Pending Approval
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              {!isApproved ? (
+                                <button
+                                  onClick={() => s.id && handleApproveStudent(s.id, true)}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-sm transition-colors"
+                                >
+                                  <Check className="w-3.5 h-3.5" /> Approve Registration
+                                </button>
+                              ) : (
+                                s.role !== "Admin" && (
+                                  <button
+                                    onClick={() => s.id && handleApproveStudent(s.id, false)}
+                                    className="px-3 py-1.5 rounded-xl bg-amber-100 dark:bg-amber-950 hover:bg-amber-200 text-amber-700 dark:text-amber-300 font-bold text-xs transition-colors"
+                                  >
+                                    Revoke
+                                  </button>
+                                )
+                              )}
+
+                              {s.role !== "Admin" && (
+                                <button
+                                  onClick={() => s.id && handleDeleteStudent(s.id)}
+                                  className="p-1.5 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950 text-rose-500 transition-colors"
+                                  title="Remove student record"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                  {studentsList.length === 0 && !studentsLoading && (
+                    <div className="p-8 text-center text-gray-500 text-xs">
+                      No student records found in database.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION B: DIRECT COURSE ACCESS OVERRIDES */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-3 shadow-sm">
                 <div>
                   <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">
-                    Direct Student Course Access Control
+                    Direct Student Course Access Overrides
                   </h3>
                   <p className="text-gray-500 text-[11px]">
                     Admin can manually grant or revoke full video lesson and certificate access for any course.
                   </p>
                 </div>
-              </div>
 
-              <div className="grid gap-3">
-                {courses.map((course) => {
-                  const isUnlocked = enrolledCourseIds.includes(course.id);
-                  return (
-                    <div
-                      key={course.id}
-                      className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">
-                            {course.title}
-                          </h4>
+                <div className="grid gap-3">
+                  {courses.map((course) => {
+                    const isUnlocked = enrolledCourseIds.includes(course.id);
+                    return (
+                      <div
+                        key={course.id}
+                        className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">
+                              {course.title}
+                            </h4>
+                            {isUnlocked ? (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center gap-1">
+                                <Unlock className="w-3 h-3" /> Access Granted
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold text-[10px] flex items-center gap-1">
+                                <Lock className="w-3 h-3" /> Locked (Requires Fee)
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Fee: <strong className="text-gray-900 dark:text-white">{course.price.toLocaleString()} ETB</strong>
+                          </p>
+                        </div>
+
+                        <div className="shrink-0">
                           {isUnlocked ? (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center gap-1">
-                              <Unlock className="w-3 h-3" /> Access Granted
-                            </span>
+                            <button
+                              onClick={() => onRevokeAccess(course.id)}
+                              className="px-4 py-2 rounded-xl bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 font-bold text-xs hover:bg-red-200"
+                            >
+                              Revoke Access
+                            </button>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold text-[10px] flex items-center gap-1">
-                              <Lock className="w-3 h-3" /> Locked (Requires Fee)
-                            </span>
+                            <button
+                              onClick={() => onGrantAccess(course.id)}
+                              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20"
+                            >
+                              Grant Free Access
+                            </button>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Fee: <strong className="text-gray-900 dark:text-white">{course.price.toLocaleString()} ETB</strong>
-                        </p>
                       </div>
-
-                      <div className="shrink-0">
-                        {isUnlocked ? (
-                          <button
-                            onClick={() => onRevokeAccess(course.id)}
-                            className="px-4 py-2 rounded-xl bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 font-bold text-xs hover:bg-red-200"
-                          >
-                            Revoke Student Access
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => onGrantAccess(course.id)}
-                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20"
-                          >
-                            Grant Free Access
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

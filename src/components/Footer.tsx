@@ -1,5 +1,5 @@
 import React from "react";
-import { GraduationCap, Github, Twitter, Linkedin, Youtube, Heart } from "lucide-react";
+import { GraduationCap, Github, Twitter, Linkedin, Youtube, Heart, Send } from "lucide-react";
 
 interface FooterProps {
   onNavigate: (sectionId: string) => void;
@@ -13,9 +13,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Col 1: Brand Info */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white font-bold">
-                <GraduationCap className="w-6 h-6" />
-              </div>
+              <img
+                src="/src/assets/images/yacob_tech_logo_1786612504492.jpg"
+                alt="Yacob Tech Academy Logo"
+                className="w-10 h-10 rounded-2xl object-cover shadow-md shadow-emerald-500/20 border border-emerald-500/40"
+                referrerPolicy="no-referrer"
+              />
               <span className="font-extrabold text-xl text-white">
                 Yacob <span className="text-emerald-400">Tech</span> Academy
               </span>
@@ -27,6 +30,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a
+                href="https://t.me/Yacob_Tech_Academy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-gray-900 hover:bg-sky-500 text-sky-400 hover:text-white flex items-center justify-center transition-all border border-gray-800 hover:border-sky-400 shadow-xs hover:scale-105"
+                title="Telegram Group (t.me/Yacob_Tech_Academy)"
+                aria-label="Telegram Group"
+              >
+                <Send className="w-4 h-4 fill-current" />
+              </a>
+              <a
                 href="#"
                 className="w-8 h-8 rounded-full bg-gray-900 hover:bg-emerald-600 text-gray-400 hover:text-white flex items-center justify-center transition-colors"
               >
@@ -36,19 +49,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 href="#"
                 className="w-8 h-8 rounded-full bg-gray-900 hover:bg-emerald-600 text-gray-400 hover:text-white flex items-center justify-center transition-colors"
               >
-                <Linkedin className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-8 h-8 rounded-full bg-gray-900 hover:bg-emerald-600 text-gray-400 hover:text-white flex items-center justify-center transition-colors"
-              >
                 <Github className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-8 h-8 rounded-full bg-gray-900 hover:bg-emerald-600 text-gray-400 hover:text-white flex items-center justify-center transition-colors"
-              >
-                <Youtube className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -114,22 +115,26 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Col 4: Resources & Support */}
           <div className="space-y-3">
-            <h4 className="font-extrabold text-xs uppercase tracking-wider text-emerald-400">Resources</h4>
+            <h4 className="font-extrabold text-xs uppercase tracking-wider text-emerald-400">Contact & Support</h4>
             <ul className="space-y-2 text-xs text-gray-400">
-              <li>
-                <button onClick={() => onNavigate("ai-tutor")} className="hover:text-white transition-colors">
-                  24/7 AI Tutor
-                </button>
+              <li className="flex items-center gap-1.5 text-gray-300">
+                <span>✉️</span> yaikobdiriba22@gmail.com
+              </li>
+              <li className="flex items-center gap-1.5 text-gray-300">
+                <span>📞</span> 0922067302 / 0906521758
               </li>
               <li>
-                <button onClick={() => onNavigate("marketplace")} className="hover:text-white transition-colors">
-                  Digital Marketplace
-                </button>
+                <a
+                  href="https://t.me/Yacob_Tech_Academy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sky-400 font-bold hover:text-sky-300 transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5 text-sky-400" /> Telegram: @Yacob_Tech_Academy
+                </a>
               </li>
-              <li>
-                <button onClick={() => onNavigate("pricing")} className="hover:text-white transition-colors">
-                  Pricing Plans
-                </button>
+              <li className="flex items-center gap-1.5 text-gray-300">
+                <span>📍</span> Addis Ababa, Ethiopia
               </li>
               <li>
                 <button onClick={() => onNavigate("faq")} className="hover:text-white transition-colors">

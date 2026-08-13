@@ -137,6 +137,7 @@ export interface ProjectIdea {
 }
 
 export interface User {
+  id?: string;
   name: string;
   email: string;
   avatar: string;
@@ -145,11 +146,32 @@ export interface User {
   enrolledCourseIds: string[];
   wishlistCourseIds: string[];
   completedCourseIds: string[];
+  isEmailVerified?: boolean;
+  isApproved?: boolean;
+  registeredAt?: string;
+  streakPoints?: number;
+  dailyStreak?: number;
+  lastStreakCheckIn?: string;
+  longestStreak?: number;
+  darkMode?: boolean;
+  phone?: string;
+  address?: string;
+  lastQuizCompletedDate?: string;
   emailNotifications?: {
     courseApproval: boolean;
     newCourses: boolean;
     weeklyDigest?: boolean;
   };
+}
+
+export interface CourseReview {
+  id: string;
+  courseId: string;
+  studentName: string;
+  studentAvatar?: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
 }
 
 export interface PaymentReceipt {

@@ -11,18 +11,21 @@ import {
   Mail,
   Bot,
   Compass,
+  Send,
 } from "lucide-react";
 
 interface HeroProps {
   onStartLearning: () => void;
   onExploreCourses: () => void;
   onOpenAITutor: () => void;
+  onOpenCareerRoadmap?: () => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({
   onStartLearning,
   onExploreCourses,
   onOpenAITutor,
+  onOpenCareerRoadmap,
 }) => {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -121,6 +124,27 @@ export const Hero: React.FC<HeroProps> = ({
                 <Bot className="w-4 h-4 text-emerald-500" />
                 Try AI Tutor
               </button>
+
+              {onOpenCareerRoadmap && (
+                <button
+                  onClick={onOpenCareerRoadmap}
+                  className="px-5 py-3.5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold text-xs shadow-md shadow-emerald-600/20 hover:scale-[1.03] active:scale-[0.98] transition-all flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  AI Career Roadmap
+                </button>
+              )}
+
+              <a
+                href="https://t.me/Yacob_Tech_Academy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-3.5 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 transition-all flex items-center justify-center hover:scale-105 shadow-xs"
+                title="Telegram Group (t.me/Yacob_Tech_Academy)"
+                aria-label="Telegram Group"
+              >
+                <Send className="w-4 h-4 text-sky-500 fill-sky-500/20" />
+              </a>
             </div>
 
             {/* Statistics Bar */}

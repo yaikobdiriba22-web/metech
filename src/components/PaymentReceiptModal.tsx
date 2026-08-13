@@ -120,7 +120,7 @@ export const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
                 <span>⚡ Unlocked Access:</span> Anyone can study right after finishing payment!
               </p>
               <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-                Receipts sent to <strong>0906521758</strong> are verified automatically. Enjoy learning!
+                Receipts sent to <strong>0906521758</strong> or Telegram group <a href="https://t.me/Yacob_Tech_Academy" target="_blank" rel="noopener noreferrer" className="underline font-bold text-sky-600 dark:text-sky-400">t.me/Yacob_Tech_Academy</a> are verified automatically. Enjoy learning!
               </p>
             </div>
             <button

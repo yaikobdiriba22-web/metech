@@ -13,6 +13,7 @@ import { Testimonials } from "./components/Testimonials";
 import { Pricing } from "./components/Pricing";
 import { FAQ } from "./components/FAQ";
 import { Newsletter } from "./components/Newsletter";
+import { ContactSection } from "./components/ContactSection";
 import { Footer } from "./components/Footer";
 import { AuthModal } from "./components/AuthModal";
 import { CertificateModal } from "./components/CertificateModal";
@@ -22,6 +23,9 @@ import { AdminDashboardModal } from "./components/AdminDashboardModal";
 import { StudentDashboardModal } from "./components/StudentDashboardModal";
 import { EmailToastNotification, EmailToast } from "./components/EmailToastNotification";
 import { MernStackModal } from "./components/MernStackModal";
+import { CustomerAssistantWidget } from "./components/CustomerAssistantWidget";
+import { CareerRoadmapModal } from "./components/CareerRoadmapModal";
+import { supabase } from "./lib/supabase";
 
 import {
   CATEGORIES,
@@ -41,17 +45,74 @@ export default function App() {
     );
   });
 
-  const [user, setUser] = useState<User | null>({
-    name: "Yaikob Diriba",
-    email: "yaikobdiriba22@gmail.com",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-    role: "Pro Learner",
-    plan: "Pro",
-    enrolledCourseIds: ["course-1"],
-    wishlistCourseIds: ["course-2"],
-    completedCourseIds: ["course-1"],
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const savedUser = localStorage.getItem("yacob_tech_active_user");
+      if (savedUser) {
+        return JSON.parse(savedUser);
+      }
+    } catch (e) {
+      console.error("Failed to parse saved user from localStorage", e);
+    }
+    return null; // Visitors start logged out by default so Login is visible
   });
+
+  // Sync user state to localStorage
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("yacob_tech_active_user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("yacob_tech_active_user");
+    }
+  }, [user]);
+
+  // Listen for Supabase real-time auth changes & restore active session
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser((prev) => {
+          if (prev) return prev;
+          const userMeta = session.user.user_metadata || {};
+          return {
+            id: session.user.id,
+            name: userMeta.full_name || session.user.email?.split("@")[0] || "Learner Student",
+            email: session.user.email || "",
+            avatar: userMeta.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+            role: userMeta.role === "Admin" ? "Admin" : "Student",
+            plan: userMeta.role === "Admin" ? "Enterprise" : "Pro",
+            enrolledCourseIds: ["course-1", "course-2"],
+            wishlistCourseIds: ["course-3"],
+            completedCourseIds: ["course-1"],
+            isEmailVerified: true,
+            isApproved: true,
+          };
+        });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const userMeta = session.user.user_metadata || {};
+        setUser({
+          id: session.user.id,
+          name: userMeta.full_name || session.user.email?.split("@")[0] || "Learner Student",
+          email: session.user.email || "",
+          avatar: userMeta.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+          role: userMeta.role === "Admin" ? "Admin" : "Student",
+          plan: userMeta.role === "Admin" ? "Enterprise" : "Pro",
+          enrolledCourseIds: ["course-1", "course-2"],
+          wishlistCourseIds: ["course-3"],
+          completedCourseIds: ["course-1"],
+          isEmailVerified: true,
+          isApproved: true,
+        });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const [coursesList, setCoursesList] = useState<Course[]>(COURSES);
   const [selectedCategorySlug, setSelectedCategorySlug] = useState<
@@ -87,6 +148,7 @@ export default function App() {
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [showStudentDashboardModal, setShowStudentDashboardModal] = useState<boolean>(false);
   const [showMernModal, setShowMernModal] = useState<boolean>(false);
+  const [showCareerRoadmapModal, setShowCareerRoadmapModal] = useState<boolean>(false);
 
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authRoleRequested, setAuthRoleRequested] = useState<"Student" | "Admin">("Student");
@@ -307,6 +369,7 @@ export default function App() {
         onOpenAdmin={handleOpenAdminPortal}
         onOpenStudentDashboard={handleOpenStudentDashboard}
         onOpenMernModal={() => setShowMernModal(true)}
+        onOpenCareerRoadmap={() => setShowCareerRoadmapModal(true)}
         pendingReceiptsCount={pendingCount}
         wishlistCount={wishlistIds.length}
         cartCount={enrolledCourseIds.length}
@@ -319,6 +382,7 @@ export default function App() {
         onStartLearning={() => handleNavigate("courses")}
         onExploreCourses={() => handleNavigate("categories")}
         onOpenAITutor={() => handleNavigate("ai-tutor")}
+        onOpenCareerRoadmap={() => setShowCareerRoadmapModal(true)}
       />
 
       {/* 3. Trusted By Companies */}
@@ -338,6 +402,8 @@ export default function App() {
           setSelectedCategorySlug(slug);
           handleNavigate("courses");
         }}
+        courses={coursesList}
+        onSelectCourse={(course) => setSelectedCourse(course)}
       />
 
       {/* 6. Featured Courses Section */}
@@ -353,10 +419,24 @@ export default function App() {
       />
 
       {/* 7. AI Learning Assistant Section */}
-      <AILearningAssistant />
+      <AILearningAssistant onOpenCareerRoadmap={() => setShowCareerRoadmapModal(true)} />
 
       {/* 8. Learning Journey Section */}
-      <LearningJourney />
+      <LearningJourney
+        courses={coursesList}
+        enrolledCourseIds={Array.from(new Set([...enrolledCourseIds, ...(user?.enrolledCourseIds || [])]))}
+        completedCourseIds={user?.completedCourseIds || []}
+        onSelectCourse={(c) => setSelectedCourse(c)}
+        onToggleCompleteCourse={(courseId) => {
+          if (!user) return;
+          const currentCompleted = user.completedCourseIds || [];
+          const isCompleted = currentCompleted.includes(courseId);
+          const updated = isCompleted
+            ? currentCompleted.filter((id) => id !== courseId)
+            : [...currentCompleted, courseId];
+          setUser({ ...user, completedCourseIds: updated });
+        }}
+      />
 
       {/* 9. Digital Marketplace Section */}
       <Marketplace items={MARKETPLACE_ITEMS} />
@@ -370,7 +450,10 @@ export default function App() {
       {/* 12. FAQ Section */}
       <FAQ faqs={FAQS} />
 
-      {/* 13. Newsletter Section */}
+      {/* 13. Contact & Support Section */}
+      <ContactSection onOpenAITutor={() => handleNavigate("ai-tutor")} />
+
+      {/* 14. Newsletter Section */}
       <Newsletter />
 
       {/* 14. Footer */}
@@ -467,11 +550,21 @@ export default function App() {
 
       {showMernModal && <MernStackModal onClose={() => setShowMernModal(false)} />}
 
+      <CareerRoadmapModal
+        isOpen={showCareerRoadmapModal}
+        onClose={() => setShowCareerRoadmapModal(false)}
+        courses={coursesList}
+        onSelectCourse={(course) => setSelectedCourse(course)}
+      />
+
       {/* Simulated Email Toast Notification Service */}
       <EmailToastNotification
         toasts={emailToasts}
         onDismiss={(id) => setEmailToasts((prev) => prev.filter((t) => t.id !== id))}
       />
+
+      {/* Floating Customer Support AI Assistant */}
+      <CustomerAssistantWidget />
     </div>
   );
 };

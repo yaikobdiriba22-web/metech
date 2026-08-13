@@ -15,10 +15,17 @@ import {
   RefreshCw,
   Lightbulb,
   Terminal,
+  Compass,
 } from "lucide-react";
 import { QuizQuestion, CodeReviewResult, ProjectIdea } from "../types";
 
-export const AILearningAssistant: React.FC = () => {
+interface AILearningAssistantProps {
+  onOpenCareerRoadmap?: () => void;
+}
+
+export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
+  onOpenCareerRoadmap,
+}) => {
   const [activeTab, setActiveTab] = useState<"chat" | "quiz" | "code" | "projects">("chat");
 
   // Chat State
@@ -250,6 +257,16 @@ export const AILearningAssistant: React.FC = () => {
                 <Lightbulb className="w-4 h-4" />
                 Project Ideas
               </button>
+
+              {onOpenCareerRoadmap && (
+                <button
+                  onClick={onOpenCareerRoadmap}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 text-white hover:from-emerald-500 hover:to-cyan-500 shadow-md shadow-emerald-600/30 flex items-center gap-2 transition-all transform hover:scale-105"
+                >
+                  <Compass className="w-4 h-4 text-amber-300" />
+                  Career Roadmap
+                </button>
+              )}
             </div>
 
             {/* Voice Assistant Simulator Toggle */}

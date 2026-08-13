@@ -1,14 +1,80 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import mongoose from "mongoose";
+
+// Persistent File Database Engine Setup
+const DATA_DIR = path.join(process.cwd(), "data");
+const DB_FILE = path.join(DATA_DIR, "db.json");
+
+interface DBStore {
+  receipts: any[];
+  students: any[];
+  courses: any[];
+  reviews: any[];
+  contactMessages: any[];
+}
+
+const defaultReviews = [
+  {
+    id: "rev-1",
+    courseId: "course-1",
+    studentName: "Dawit Tadesse",
+    studentAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    rating: 5,
+    comment: "Outstanding Python & AI track! The practical projects helped me build my first machine learning model easily.",
+    createdAt: "August 1, 2026",
+  },
+];
+
+const defaultReceipts: any[] = [];
+
+const defaultStudents: any[] = [];
+
+function loadDBStore(): DBStore {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (fs.existsSync(DB_FILE)) {
+      const data = fs.readFileSync(DB_FILE, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.warn("Could not read db.json file, falling back to defaults", err);
+  }
+  const initial = {
+    receipts: defaultReceipts,
+    students: defaultStudents,
+    courses: [],
+    reviews: defaultReviews,
+    contactMessages: [],
+  };
+  saveDBStore(initial);
+  return initial;
+}
+
+function saveDBStore(data: DBStore) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save db.json file", err);
+  }
+}
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json({ limit: "10mb" }));
+
+  // Load persistent DB store
+  let dbStore = loadDBStore();
 
   // --- MERN Stack Database Connection & Models ---
   let mongoConnected = false;
@@ -17,8 +83,8 @@ async function startServer() {
   const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017/yacob_tech_academy_db";
 
   try {
-    // Attempt Mongoose connection with timeout
-    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 2000 });
+    // Attempt Mongoose connection with fast timeout
+    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 500 });
     mongoConnected = true;
     console.log("MongoDB Mongoose connected successfully!");
   } catch (err) {
@@ -68,10 +134,53 @@ async function startServer() {
     notes: String,
   });
 
+  const userSchema = new mongoose.Schema({
+    id: { type: String, required: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    role: { type: String, default: "Student" },
+    plan: { type: String, default: "Pro" },
+    isEmailVerified: { type: Boolean, default: true },
+    isApproved: { type: Boolean, default: false },
+    registeredAt: { type: String, default: () => new Date().toLocaleString() },
+  });
+
   const CourseModel = mongoose.models.Course || mongoose.model("Course", courseSchema);
   const ReceiptModel = mongoose.models.Receipt || mongoose.model("Receipt", receiptSchema);
+  const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
 
-  // In-Memory fallback store for full MERN functionality even without an active standalone Mongo daemon
+  // In-Memory fallback store for course reviews
+  let inMemoryReviews: any[] = [
+    {
+      id: "rev-1",
+      courseId: "course-1",
+      studentName: "Dawit Tadesse",
+      studentAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      rating: 5,
+      comment: "Outstanding Python & AI track! The practical projects helped me build my first machine learning model easily.",
+      createdAt: "August 1, 2026",
+    },
+    {
+      id: "rev-2",
+      courseId: "course-2",
+      studentName: "Bethlehem Haile",
+      studentAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      rating: 5,
+      comment: "Full-Stack Web Development track is super clear! Loved learning React 19 and Node Express with Telebirr integration examples.",
+      createdAt: "August 5, 2026",
+    },
+    {
+      id: "rev-3",
+      courseId: "course-3",
+      studentName: "Elias Worku",
+      studentAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+      rating: 5,
+      comment: "Great UI/UX & Graphic Design course. Yacob Tech Academy is the best online learning platform in Ethiopia!",
+      createdAt: "August 8, 2026",
+    },
+  ];
+
+  // In-Memory fallback store for full backend functionality
   let inMemoryReceipts: any[] = [
     {
       id: "rcpt-101",
@@ -88,6 +197,39 @@ async function startServer() {
       submittedAt: "July 23, 2026, 11:30 AM",
       status: "pending",
       notes: "Transferred via CBE Birr App",
+    },
+  ];
+
+  let inMemoryStudents: any[] = [
+    {
+      id: "usr-student-demo",
+      name: "Yaikob Diriba",
+      email: "yaikobdiriba22@gmail.com",
+      role: "Student",
+      plan: "Pro",
+      isEmailVerified: true,
+      isApproved: true,
+      registeredAt: "July 20, 2026",
+    },
+    {
+      id: "usr-pending-1",
+      name: "Abebe Bikila",
+      email: "abebe.bikila@gmail.com",
+      role: "Student",
+      plan: "Pro",
+      isEmailVerified: true,
+      isApproved: false,
+      registeredAt: "August 11, 2026",
+    },
+    {
+      id: "usr-pending-2",
+      name: "Tigist Alemu",
+      email: "tigist.alemu@gmail.com",
+      role: "Student",
+      plan: "Pro",
+      isEmailVerified: true,
+      isApproved: false,
+      registeredAt: "August 11, 2026",
     },
   ];
 
@@ -147,9 +289,9 @@ async function startServer() {
         const dbReceipts = await ReceiptModel.find().sort({ _id: -1 });
         return res.json({ receipts: dbReceipts });
       }
-      return res.json({ receipts: inMemoryReceipts });
+      return res.json({ receipts: dbStore.receipts });
     } catch (err) {
-      return res.json({ receipts: inMemoryReceipts });
+      return res.json({ receipts: dbStore.receipts });
     }
   });
 
@@ -172,8 +314,9 @@ async function startServer() {
         submittedAt: receiptData.submittedAt || new Date().toLocaleString(),
         status: receiptData.status || "pending",
       };
-      inMemoryReceipts.unshift(newReceipt);
-      return res.status(201).json({ receipt: newReceipt, message: "Receipt saved to MERN Database Store!" });
+      dbStore.receipts.unshift(newReceipt);
+      saveDBStore(dbStore);
+      return res.status(201).json({ receipt: newReceipt, message: "Receipt saved to persistent backend store!" });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to create receipt", details: err?.message });
     }
@@ -193,27 +336,307 @@ async function startServer() {
         }
       }
 
-      inMemoryReceipts = inMemoryReceipts.map((r) =>
+      dbStore.receipts = dbStore.receipts.map((r) =>
         r.id === id ? { ...r, status } : r
       );
-      const found = inMemoryReceipts.find((r) => r.id === id);
+      saveDBStore(dbStore);
+      const found = dbStore.receipts.find((r) => r.id === id);
       return res.json({ receipt: found });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to update receipt status", details: err?.message });
     }
   });
 
-  // MERN REST Endpoint: DELETE receipt
+  // REST Endpoint: DELETE receipt
   app.delete("/api/receipts/:id", async (req, res) => {
     try {
       const { id } = req.params;
       if (mongoConnected) {
         await (ReceiptModel as any).deleteOne({ id });
       }
-      inMemoryReceipts = inMemoryReceipts.filter((r) => r.id !== id);
-      return res.json({ success: true, message: "Receipt deleted from MERN database" });
+      dbStore.receipts = dbStore.receipts.filter((r) => r.id !== id);
+      saveDBStore(dbStore);
+      return res.json({ success: true, message: "Receipt deleted from database" });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to delete receipt" });
+    }
+  });
+
+  // --- Student Registration & Admin Approval REST Endpoints ---
+  // GET /api/students
+  app.get("/api/students", async (_req, res) => {
+    try {
+      if (mongoConnected) {
+        const dbUsers = await UserModel.find().sort({ _id: -1 });
+        if (dbUsers && dbUsers.length > 0) {
+          return res.json({ students: dbUsers });
+        }
+      }
+      return res.json({ students: dbStore.students });
+    } catch (err) {
+      return res.json({ students: dbStore.students });
+    }
+  });
+
+  // POST /api/students/register
+  app.post("/api/students/register", async (req, res) => {
+    try {
+      const studentData = req.body;
+      if (!studentData.email || !studentData.name) {
+        return res.status(400).json({ error: "Name and Email are required" });
+      }
+
+      const isApproved = studentData.role === "Admin" ? true : (studentData.isApproved ?? false);
+      const newStudent = {
+        id: studentData.id || `usr-${Date.now()}`,
+        name: studentData.name,
+        email: studentData.email,
+        role: studentData.role || "Student",
+        plan: studentData.plan || "Pro",
+        isEmailVerified: studentData.isEmailVerified ?? true,
+        isApproved,
+        registeredAt: new Date().toLocaleString(),
+      };
+
+      if (mongoConnected) {
+        await UserModel.create(newStudent);
+      }
+
+      const existingIdx = dbStore.students.findIndex((s) => s.email.toLowerCase() === newStudent.email.toLowerCase());
+      if (existingIdx >= 0) {
+        dbStore.students[existingIdx] = newStudent;
+      } else {
+        dbStore.students.unshift(newStudent);
+      }
+      saveDBStore(dbStore);
+
+      return res.status(201).json({
+        student: newStudent,
+        message: isApproved ? "Student registered and approved!" : "Student registered successfully! Pending admin approval.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to register student", details: err?.message });
+    }
+  });
+
+  // POST /api/auth/login
+  app.post("/api/auth/login", (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const user = dbStore.students.find((s) => s.email.toLowerCase() === email.toLowerCase());
+      if (!user) {
+        // Return clear error or register demo
+        return res.status(404).json({ error: "Student account not found. Please register first." });
+      }
+
+      return res.json({
+        user,
+        message: user.isApproved ? "Login successful!" : "Account pending admin approval.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // PATCH /api/students/:id/approve
+  app.patch("/api/students/:id/approve", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isApproved } = req.body;
+
+      if (mongoConnected) {
+        await (UserModel as any).updateOne({ id }, { isApproved });
+      }
+
+      dbStore.students = dbStore.students.map((s) =>
+        s.id === id ? { ...s, isApproved } : s
+      );
+      saveDBStore(dbStore);
+
+      const updated = dbStore.students.find((s) => s.id === id);
+      return res.json({ student: updated, message: isApproved ? "Student approved successfully!" : "Student approval revoked." });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to update student approval", details: err?.message });
+    }
+  });
+
+  // DELETE /api/students/:id
+  app.delete("/api/students/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (mongoConnected) {
+        await (UserModel as any).deleteOne({ id });
+      }
+      dbStore.students = dbStore.students.filter((s) => s.id !== id);
+      saveDBStore(dbStore);
+      return res.json({ success: true, message: "Student record deleted." });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to delete student" });
+    }
+  });
+
+  // --- Course Reviews REST Endpoints ---
+  // GET /api/courses/:id/reviews
+  app.get("/api/courses/:id/reviews", (req, res) => {
+    const { id } = req.params;
+    const reviews = dbStore.reviews.filter((r) => r.courseId === id);
+    const total = reviews.length;
+    const avgRating = total > 0
+      ? Number((reviews.reduce((acc, curr) => acc + curr.rating, 0) / total).toFixed(1))
+      : 5.0;
+
+    return res.json({
+      reviews,
+      count: total,
+      averageRating: avgRating,
+    });
+  });
+
+  // POST /api/courses/:id/reviews
+  app.post("/api/courses/:id/reviews", (req, res) => {
+    try {
+      const { id } = req.params;
+      const { studentName, studentAvatar, rating, comment } = req.body;
+
+      if (!comment || !rating) {
+        return res.status(400).json({ error: "Rating and feedback comment are required" });
+      }
+
+      const newReview = {
+        id: `rev-${Date.now()}`,
+        courseId: id,
+        studentName: studentName || "Anonymous Student",
+        studentAvatar: studentAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+        rating: Number(rating) || 5,
+        comment,
+        createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      };
+
+      dbStore.reviews.unshift(newReview);
+      saveDBStore(dbStore);
+
+      const courseReviews = dbStore.reviews.filter((r) => r.courseId === id);
+      const total = courseReviews.length;
+      const avgRating = Number((courseReviews.reduce((acc, curr) => acc + curr.rating, 0) / total).toFixed(1));
+
+      return res.status(201).json({
+        review: newReview,
+        count: total,
+        averageRating: avgRating,
+        message: "Review submitted successfully!",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to submit review" });
+    }
+  });
+
+  // --- Contact & Inquiries REST Endpoints ---
+  // POST /api/contact
+  app.post("/api/contact", (req, res) => {
+    try {
+      const { name, email, phone, topic, subject, message } = req.body;
+      if (!name || !email || !message) {
+        return res.status(400).json({ error: "Name, email and message are required" });
+      }
+
+      const newMessage = {
+        id: `msg-${Date.now()}`,
+        name,
+        email,
+        phone: phone || "",
+        topic: topic || "Course Enrollment",
+        subject: subject || "",
+        message,
+        createdAt: new Date().toLocaleString(),
+      };
+
+      dbStore.contactMessages.unshift(newMessage);
+      saveDBStore(dbStore);
+
+      return res.status(201).json({
+        message: "Inquiry saved to backend database! Our team will respond shortly.",
+        data: newMessage,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to record inquiry" });
+    }
+  });
+
+  // GET /api/contact
+  app.get("/api/contact", (_req, res) => {
+    return res.json({ messages: dbStore.contactMessages });
+  });
+
+  // GET /api/admin/stats
+  app.get("/api/admin/stats", (_req, res) => {
+    const totalStudents = dbStore.students.length;
+    const approvedStudents = dbStore.students.filter((s) => s.isApproved).length;
+    const pendingStudents = dbStore.students.filter((s) => !s.isApproved).length;
+    const totalReceipts = dbStore.receipts.length;
+    const approvedReceipts = dbStore.receipts.filter((r) => r.status === "approved").length;
+    const pendingReceipts = dbStore.receipts.filter((r) => r.status === "pending").length;
+
+    const totalRevenueEtb = dbStore.receipts
+      .filter((r) => r.status === "approved")
+      .reduce((acc, r) => acc + (r.amountEtb || 0), 0);
+
+    return res.json({
+      students: { total: totalStudents, approved: approvedStudents, pending: pendingStudents },
+      receipts: { total: totalReceipts, approved: approvedReceipts, pending: pendingReceipts },
+      revenueEtb: totalRevenueEtb,
+      reviewsCount: dbStore.reviews.length,
+      contactMessagesCount: dbStore.contactMessages.length,
+    });
+  });
+
+  // --- Customer Assistant AI Endpoint ---
+  app.post("/api/ai-assistant", async (req, res) => {
+    try {
+      const { message, history } = req.body;
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      const ai = getGenAI();
+      const systemInstruction = `You are Yacob Tech Academy Customer Support AI Assistant 🤖🇪🇹.
+Your role is to assist prospective students, enrolled learners, and visitors with clear, warm, and helpful information about Yacob Tech Academy Ethiopia.
+Key platform facts:
+1. Registration & Approval: All new student registrations require Admin Verification & Approval before gaining access to course tracks.
+2. Payment Methods & Verification:
+   - Telebirr / CBE Birr Account: 0906521758 (Account Name: Yaikob Diriba)
+   - Commercial Bank of Ethiopia (CBE) Account: 1000425428016
+   - Students submit receipt references/photos via the "Fee Payment Receipt" button to unlock courses.
+3. Offered Tracks: Full-Stack Web Development, AI & Machine Learning, Mobile App Dev (Flutter/React Native), Graphic Design & UI/UX, Cyber Security, Video Editing & Motion Graphics, Python Automation, Cloud Computing.
+4. Certificates: Official verifiable certificates are awarded upon course completion.
+5. Admin Portal: System administrators review payment receipts, approve student registrations, and manage learning tracks.
+
+Provide concise, friendly, helpful answers in clear English with warm Ethiopian greetings (Selam 🇪🇹) where appropriate. Use bullet points for steps or account numbers.`;
+
+      const contents = history && Array.isArray(history) && history.length > 0
+        ? [...history, { role: "user", parts: [{ text: message }] }]
+        : message;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        },
+      });
+
+      const reply = response.text || "Selam! How can I assist you today with course registration, payments, or approvals at Yacob Tech Academy?";
+      res.json({ reply });
+    } catch (err: any) {
+      console.error("AI Assistant error:", err);
+      res.status(500).json({
+        error: "Failed to communicate with Customer AI Assistant",
+        details: err?.message || String(err),
+      });
     }
   });
 
@@ -394,6 +817,133 @@ Return a JSON array where each project has:
     } catch (err: any) {
       console.error("Project ideas error:", err);
       res.status(500).json({ error: "Failed to generate project ideas", details: err?.message || String(err) });
+    }
+  });
+
+  // 5. AI Career Roadmap Generator Endpoint
+  app.post("/api/ai-roadmap", async (req, res) => {
+    try {
+      const {
+        careerGoal,
+        currentSkills,
+        experienceLevel = "Beginner",
+        weeklyHours = "10-15 hours/week",
+        availableCourses = [],
+      } = req.body;
+
+      if (!careerGoal) {
+        return res.status(400).json({ error: "Career goal is required" });
+      }
+
+      const ai = getGenAI();
+
+      const courseListContext =
+        Array.isArray(availableCourses) && availableCourses.length > 0
+          ? availableCourses
+              .map(
+                (c: any) =>
+                  `- "${c.title}" (Category: ${c.category}, Level: ${c.level}, Duration: ${c.duration}, ID: ${c.id})`
+              )
+              .join("\n")
+          : `- "Full-Stack Web Development Bootcamp (React 19 & Express)"\n- "Python & AI Engineering Track (Gemini, PyTorch & Agents)"\n- "Mobile App Development with Flutter & React Native"\n- "UI/UX & Graphic Design Mastery"\n- "Cyber Security & Ethical Hacking Essentials"\n- "Modern Database Systems (MongoDB, PostgreSQL & Firebase)"`;
+
+      const prompt = `You are the Lead Tech Career Counselor and Chief Academic Officer at Yacob Tech Academy Ethiopia.
+A student has requested a customized step-by-step career roadmap to achieve their goal.
+
+Student Profile:
+- Target Career Goal: ${careerGoal}
+- Current Skill Set & Background: ${currentSkills || "Beginner with basic computer literacy"}
+- Current Experience Level: ${experienceLevel}
+- Available Weekly Study Time: ${weeklyHours}
+
+Available Yacob Tech Academy Courses:
+${courseListContext}
+
+Generate a comprehensive, highly practical, sequence-ordered learning roadmap tailored to this student's exact goal.
+Structure your response strictly as JSON matching this schema:
+- roadmapTitle: string
+- careerSummary: string
+- estimatedTimeToGoal: string
+- recommendedRoleTitle: string
+- targetSalaryRange: string
+- steps: array of 3 to 5 sequence-ordered objects:
+    - stepNumber: integer (1, 2, 3...)
+    - phaseTitle: string
+    - duration: string
+    - matchedCourseTitle: string
+    - matchedCourseId: string
+    - keySkillsToMaster: array of strings (3-5 specific skills)
+    - practicalProject: string
+    - whyThisStep: string
+- careerAdvice: array of strings (3 actionable advice points)`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              roadmapTitle: { type: Type.STRING },
+              careerSummary: { type: Type.STRING },
+              estimatedTimeToGoal: { type: Type.STRING },
+              recommendedRoleTitle: { type: Type.STRING },
+              targetSalaryRange: { type: Type.STRING },
+              steps: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    stepNumber: { type: Type.INTEGER },
+                    phaseTitle: { type: Type.STRING },
+                    duration: { type: Type.STRING },
+                    matchedCourseTitle: { type: Type.STRING },
+                    matchedCourseId: { type: Type.STRING },
+                    keySkillsToMaster: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
+                    practicalProject: { type: Type.STRING },
+                    whyThisStep: { type: Type.STRING },
+                  },
+                  required: [
+                    "stepNumber",
+                    "phaseTitle",
+                    "duration",
+                    "matchedCourseTitle",
+                    "keySkillsToMaster",
+                    "practicalProject",
+                    "whyThisStep",
+                  ],
+                },
+              },
+              careerAdvice: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+            },
+            required: [
+              "roadmapTitle",
+              "careerSummary",
+              "estimatedTimeToGoal",
+              "recommendedRoleTitle",
+              "steps",
+              "careerAdvice",
+            ],
+          },
+        },
+      });
+
+      const jsonText = response.text || "{}";
+      const roadmap = JSON.parse(jsonText);
+      res.json({ roadmap });
+    } catch (err: any) {
+      console.error("Roadmap generation error:", err);
+      res.status(500).json({
+        error: "Failed to generate AI career roadmap",
+        details: err?.message || String(err),
+      });
     }
   });
 
