@@ -13,6 +13,7 @@ import {
   Loader2,
   Minimize2,
 } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Message {
   sender: "user" | "assistant";
@@ -22,16 +23,44 @@ interface Message {
 
 export const CustomerAssistantWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { language, t } = useLanguage();
+
+  const getInitialGreeting = (lang: string) => {
+    if (lang === "om") {
+      return "Akkam jirtu! 🇪🇹 Ani Gargaaraa AI Yacob Tech Academy ti. Galmee barnootaa, kaffaltii Telebirr/CBE, ykn mirkaneessa Admin irratti maal isin gargaaruu?";
+    }
+    if (lang === "am") {
+      return "ሰላም! 🇪🇹 እኔ የያዕቆብ ቴክ አካዳሚ የደንበኞች ድጋፍ ሰጪ AI ረዳት ነኝ። በምዝገባ፣ በቴሌብር/ሲቢኢ ክፍያ ማረጋገጫ ወይም በኮርስ ትምህርቶች ዙሪያ በምን ልርዳዎት?";
+    }
+    return "Selam! 🇪🇹 I am your Yacob Tech Academy Customer Support AI Assistant. How can I help you today with course registrations, admin approvals, CBE/Telebirr payment receipts, or course tracks?";
+  };
+
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "assistant",
-      text: "Selam! 🇪🇹 I am your Yacob Tech Academy Customer Support AI Assistant. How can I help you today with course registrations, admin approvals, CBE/Telebirr payment receipts, or course tracks?",
+      text: getInitialGreeting(language),
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Update initial message if language changes and only default message exists
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].sender === "assistant") {
+        return [
+          {
+            sender: "assistant",
+            text: getInitialGreeting(language),
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [language]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -69,6 +98,7 @@ export const CustomerAssistantWidget: React.FC = () => {
         body: JSON.stringify({
           message: textToSend,
           history,
+          language,
         }),
       });
 
@@ -84,11 +114,17 @@ export const CustomerAssistantWidget: React.FC = () => {
         },
       ]);
     } catch (err) {
+      const errorMsg =
+        language === "om"
+          ? "Rakkoon qunnameera. Maaloo intarneetii keessan ilaalaa ykn lakk. 0906521758 irratti nu qunnamaa."
+          : language === "am"
+          ? "ይቅርታ፣ ከAI ሰርቨር ጋር መገናኘት አልተቻለም። እባክዎ በስልክ 0906521758 ወይም ቴሌግራም ያግኙን።"
+          : "I encountered an issue connecting to the AI backend. Please check your internet connection or reach us directly at 0906521758 / Telebirr account 0906521758.";
       setMessages((prev) => [
         ...prev,
         {
           sender: "assistant",
-          text: "I encountered an issue connecting to the AI backend. Please check your internet connection or reach us directly at 0906521758 / Telebirr account 0906521758.",
+          text: errorMsg,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -97,12 +133,27 @@ export const CustomerAssistantWidget: React.FC = () => {
     }
   };
 
-  const suggestionChips = [
-    { label: "💳 Telebirr & CBE Payment Info", prompt: "How do I make a course fee payment using Telebirr or CBE Bank?" },
-    { label: "🛡️ Admin Approval Process", prompt: "How long does student registration approval take by the admin?" },
-    { label: "🎓 Available Courses & Tracks", prompt: "What course tracks are available at Yacob Tech Academy?" },
-    { label: "📜 Certificate Verification", prompt: "How do I get my official certificate after finishing a course?" },
-  ];
+  const suggestionChips =
+    language === "om"
+      ? [
+          { label: "💳 Kaffaltii Telebirr & CBE", prompt: "Akkaataa kaffaltii Telebirr fi Baankii Daldala Itiyoophiyaa (CBE) itti kaffalu natti himi." },
+          { label: "🛡️ Adeemsa Eeyyama Admin", prompt: "Galmeen barataa admin biratti mirkanaa'uuf yeroo hammam fudhata?" },
+          { label: "🎓 Gosa Barnootaa (Tracks)", prompt: "Yacob Tech Academy keessatti koorsiiwwan akkamii jiru?" },
+          { label: "📜 Waraqaa Ragaa (Certificate)", prompt: "Koorsii xumuree waraqaa ragaa akkamitti argadha?" },
+        ]
+      : language === "am"
+      ? [
+          { label: "💳 የቴሌብር እና ሲቢኢ ክፍያ መረጃ", prompt: "የኮርስ ክፍያን በቴሌብር ወይም በኢትዮጵያ ንግድ ባንክ (CBE) እንዴት መክፈል እችላለሁ?" },
+          { label: "🛡️ የአስተዳዳሪ ማረጋገጫ ሂደት", prompt: "የተማሪ ምዝገባ በአስተዳዳሪው እንዲፀድቅ ምን ያህል ጊዜ ይወስዳል?" },
+          { label: "🎓 የሚሰጡ የኮርስ ዘርፎች", prompt: "በያዕቆብ ቴክ አካዳሚ የሚሰጡት የትምህርት አይነቶች የትኞቹ ናቸው?" },
+          { label: "📜 ሰርተፍኬት ማረጋገጫ", prompt: "ትምህርቴን ሳጠናቅቅ ህጋዊ ሰርተፍኬት እንዴት ማግኘት እችላለሁ?" },
+        ]
+      : [
+          { label: "💳 Telebirr & CBE Payment Info", prompt: "How do I make a course fee payment using Telebirr or CBE Bank?" },
+          { label: "🛡️ Admin Approval Process", prompt: "How long does student registration approval take by the admin?" },
+          { label: "🎓 Available Courses & Tracks", prompt: "What course tracks are available at Yacob Tech Academy?" },
+          { label: "📜 Certificate Verification", prompt: "How do I get my official certificate after finishing a course?" },
+        ];
 
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end">
@@ -117,9 +168,9 @@ export const CustomerAssistantWidget: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-extrabold text-sm flex items-center gap-1.5">
-                  Customer Assistant AI <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  {t("customerAssistantTitle")} <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 </h3>
-                <p className="text-[11px] text-emerald-100/80">Yacob Tech Academy 24/7 Support</p>
+                <p className="text-[11px] text-emerald-100/80">{t("customerAssistantSubtitle")}</p>
               </div>
             </div>
             <button
@@ -171,7 +222,13 @@ export const CustomerAssistantWidget: React.FC = () => {
             {loading && (
               <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-2.5 rounded-2xl w-fit border border-emerald-500/20">
                 <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
-                <span>AI Assistant is generating response...</span>
+                <span>
+                  {language === "om"
+                    ? "Gargaaraan AI deebii qopheessaa jira..."
+                    : language === "am"
+                    ? "AI ረዳቱ መልስ በማዘጋጀት ላይ ነው..."
+                    : "AI Assistant is generating response..."}
+                </span>
               </div>
             )}
 
@@ -205,7 +262,13 @@ export const CustomerAssistantWidget: React.FC = () => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask AI Assistant anything about Yacob Tech..."
+                placeholder={
+                  language === "om"
+                    ? "Waa'ee Yacob Tech waan barbaaddan AI gaafadhaa..."
+                    : language === "am"
+                    ? "ስለ ያዕቆብ ቴክ አካዳሚ ማንኛውንም ጥያቄ AI ረዳቱን ይጠይቁ..."
+                    : "Ask AI Assistant anything about Yacob Tech..."
+                }
                 className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
               <button
@@ -230,9 +293,18 @@ export const CustomerAssistantWidget: React.FC = () => {
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400" />
         </div>
-        <span>{isOpen ? "Close Assistant" : "Customer Assistant AI"}</span>
+        <span>
+          {isOpen
+            ? language === "om"
+              ? "Cufi"
+              : language === "am"
+              ? "ዝጋ"
+              : "Close"
+            : t("customerAssistantTitle")}
+        </span>
         <Sparkles className="w-4 h-4 text-amber-300" />
       </button>
     </div>
   );
 };
+

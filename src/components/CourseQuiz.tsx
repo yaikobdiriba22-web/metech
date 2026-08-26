@@ -16,7 +16,6 @@ import {
   Check,
 } from "lucide-react";
 import { Course, QuizQuestion, QuizResult, User } from "../types";
-import { useToast } from "../context/ToastContext";
 
 interface CourseQuizProps {
   course: Course;
@@ -35,9 +34,7 @@ export const CourseQuiz: React.FC<CourseQuizProps> = ({
   onSaveResult,
   onClose,
 }) => {
-  const { toast } = useToast();
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
@@ -197,18 +194,6 @@ export const CourseQuiz: React.FC<CourseQuizProps> = ({
 
     onSaveResult(result);
     setSavedStatus(true);
-
-    if (passed) {
-      toast.achievement(
-        "Quiz Milestone Passed! 🏆",
-        `You scored ${score}/${questions.length} (${percentage}%) on "${lessonTitle}"! Saved to profile.`
-      );
-    } else {
-      toast.info(
-        "Quiz Completed 📝",
-        `You scored ${score}/${questions.length} (${percentage}%) on "${lessonTitle}". Review answers below to improve.`
-      );
-    }
   };
 
   const handleRestartQuiz = () => {

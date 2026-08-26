@@ -23,6 +23,8 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { User } from "../types";
 import { UserBadges } from "./UserBadges";
+import { useLanguage } from "../context/LanguageContext";
+import { LanguageSelector } from "./LanguageSelector";
 
 interface NavbarProps {
   darkMode: boolean;
@@ -62,6 +64,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -72,14 +75,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const navItems = [
-    { label: "Home", id: "hero" },
-    { label: "Courses", id: "courses" },
-    { label: "Categories", id: "categories" },
-    { label: "AI Learning", id: "ai-tutor" },
-    { label: "Marketplace", id: "marketplace" },
-    { label: "Pricing", id: "pricing" },
-    { label: "Blog", id: "blog" },
-    { label: "Contact", id: "contact" },
+    { label: t("navHome"), id: "hero" },
+    { label: t("navCourses"), id: "courses" },
+    { label: t("navCategories"), id: "categories" },
+    { label: t("navAiLearning"), id: "ai-tutor" },
+    { label: t("navMarketplace"), id: "marketplace" },
+    { label: t("navPricing"), id: "pricing" },
+    { label: t("navBlog"), id: "blog" },
+    { label: t("navContact"), id: "contact" },
   ];
 
   const handleNavClick = (id: string) => {
@@ -116,10 +119,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <span className="font-extrabold text-xl tracking-tight text-gray-900 dark:text-white flex items-center gap-1.5">
-              Yacob <span className="text-emerald-600 dark:text-emerald-400">Tech</span>
+              {t("brandName", "Yacob Tech")}
             </span>
             <span className="block text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">
-              Academy Ethiopia 🇪🇹
+              {t("brandSubtitle", "Academy Ethiopia 🇪🇹")}
             </span>
           </div>
         </button>
@@ -130,7 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                 activeSection === item.id
                   ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30"
                   : "text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-gray-800/50"
@@ -147,7 +150,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Multi-Language Selector Dropdown */}
+          <LanguageSelector variant="compact" />
+
           {/* Dashboards - ONLY VISIBLE WHEN USER IS LOGGED IN */}
           {user && (
             <>
@@ -156,10 +162,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={onOpenStudentDashboard}
                   className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
-                  title="Open Student Learning Dashboard"
+                  title={t("navStudentDashboard")}
                 >
                   <GraduationCap className="w-4 h-4 text-emerald-500" />
-                  <span className="hidden md:inline">Student Dashboard 🎓</span>
+                  <span className="hidden md:inline">{t("navStudentDashboard")}</span>
                   <span className="px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 font-black text-[10px] flex items-center gap-0.5">
                     <Flame className="w-3 h-3 fill-rose-500 text-rose-500" />
                     <span>{user.dailyStreak || 3}d</span>
@@ -175,11 +181,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ? "bg-amber-500/20 border-amber-500/50 text-amber-700 dark:text-amber-300 shadow-sm"
                     : "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-700 dark:text-amber-300"
                 }`}
-                title="Admin Payment Approvals & Dashboard"
+                title={user.role === "Admin" ? t("navAdminDashboard") : t("navAdminPortal")}
               >
                 <ShieldCheck className="w-4 h-4 text-amber-500" />
                 <span className="hidden md:inline">
-                  {user.role === "Admin" ? "Admin Dashboard 🛡️" : "Admin Portal"}
+                  {user.role === "Admin" ? t("navAdminDashboard") : t("navAdminPortal")}
                 </span>
                 {pendingReceiptsCount > 0 && (
                   <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center animate-bounce">
@@ -194,10 +200,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("contact")}
             className="px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/40 text-teal-700 dark:text-teal-300 font-extrabold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
-            title="Contact Yacob Tech Academy Support"
+            title="Contact Support"
           >
             <Phone className="w-3.5 h-3.5 text-teal-500" />
-            <span className="hidden xl:inline">Contact 📞</span>
+            <span className="hidden xl:inline">{t("navContact")} 📞</span>
           </button>
 
           {/* Career Roadmap AI Button */}
@@ -208,7 +214,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               title="Generate Personalized AI Career Roadmap"
             >
               <Compass className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">AI Roadmap</span>
+              <span className="hidden sm:inline">{t("navAiRoadmap")}</span>
             </button>
           )}
 
@@ -218,7 +224,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             className="p-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-600 dark:text-sky-400 transition-all shadow-xs flex items-center justify-center hover:scale-105"
-            title="Telegram Group (t.me/Yacob_Tech_Academy)"
+            title={t("navTelegramGroup")}
             aria-label="Telegram Group"
           >
             <Send className="w-4 h-4 text-sky-500 fill-sky-500/20" />
@@ -228,7 +234,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("courses")}
             className="p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-gray-800 transition-colors relative"
-            title="Wishlist"
+            title={t("navWishlist")}
           >
             <Heart className="w-5 h-5" />
             {wishlistCount > 0 && (
@@ -248,7 +254,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? "bg-gray-900 border-emerald-500/40 shadow-emerald-950/60"
                 : "bg-amber-100/90 border-amber-300 shadow-amber-200/60"
             }`}
-            title={darkMode ? "Switch to Light Mode ☀️" : "Switch to Dark Mode 🌙"}
+            title={darkMode ? t("navThemeLight") : t("navThemeDark")}
             aria-label="Toggle Theme"
           >
             {/* Ambient Background Icons inside Track */}
@@ -323,7 +329,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                     <p className="text-[10px] text-gray-400 font-semibold">
-                      Work Permission: {user.role === "Admin" ? "Full Administrator Access" : "Course Study & Telebirr/CBE Payments"}
+                      Work Permission: {user.role === "Admin" ? t("navWorkPermissionAdmin") : t("navWorkPermissionStudent")}
                     </p>
                   </div>
 
@@ -342,7 +348,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-xl transition-colors"
                     >
                       <GraduationCap className="w-4 h-4 text-emerald-500" />
-                      Student Dashboard 🎓
+                      {t("navStudentDashboard")}
                     </button>
                   )}
 
@@ -354,7 +360,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-gray-800 rounded-xl transition-colors"
                   >
                     <Award className="w-4 h-4 text-emerald-500" />
-                    My Certificates & Badges
+                    {t("navMyCertificates")}
                   </button>
 
                   <button
@@ -365,7 +371,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors"
                   >
                     <ShieldCheck className="w-4 h-4 text-amber-500" />
-                    {user.role === "Admin" ? "Admin Control Dashboard 🛡️" : "Admin Approvals Login"}
+                    {user.role === "Admin" ? t("navAdminDashboard") : t("navAdminPortal")}
                   </button>
 
                   <button
@@ -376,7 +382,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    Log Out
+                    {t("navLogOut")}
                   </button>
                 </div>
               )}
@@ -387,13 +393,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onOpenAuth}
                 className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs transition-all shadow-xs"
               >
-                Sign In / Login 🔑
+                {t("navSignIn")}
               </button>
               <button
                 onClick={onOpenAuth}
                 className="hidden sm:inline-flex px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 hover:scale-[1.02] transition-all"
               >
-                Get Started
+                {t("navGetStarted")}
               </button>
             </div>
           )}
@@ -411,6 +417,14 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 px-4 pt-3 pb-6 shadow-xl">
+          {/* Mobile Language Switcher Pills */}
+          <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+              {t("languageLabel", "Language / ቋንቋ / Afaan")}:
+            </span>
+            <LanguageSelector variant="pills" />
+          </div>
+
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => (
               <button
@@ -436,7 +450,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     }}
                     className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-300/50 dark:border-emerald-800/50"
                   >
-                    <span>Student Dashboard 🎓</span>
+                    <span>{t("navStudentDashboard")}</span>
                     <GraduationCap className="w-4 h-4 text-emerald-500" />
                   </button>
                 )}
@@ -447,7 +461,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/30 border border-amber-300/40 dark:border-amber-800/40"
                 >
-                  <span>{user.role === "Admin" ? "Admin Dashboard 🛡️" : "Admin Approvals Portal"}</span>
+                  <span>{user.role === "Admin" ? t("navAdminDashboard") : t("navAdminPortal")}</span>
                   <ShieldCheck className="w-4 h-4 text-amber-500" />
                 </button>
               </>
@@ -462,7 +476,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-50/50 dark:bg-sky-950/30 border border-sky-300/40 dark:border-sky-800/40"
             >
               <span className="flex items-center gap-2">
-                <Send className="w-4 h-4 text-sky-500" /> Telegram Group
+                <Send className="w-4 h-4 text-sky-500" /> {t("navTelegramGroup")}
               </span>
               <ChevronRight className="w-4 h-4 text-sky-400" />
             </a>
@@ -471,7 +485,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center justify-between px-4 py-2.5 my-1 rounded-xl bg-gray-100/70 dark:bg-gray-900/80 border border-gray-200/80 dark:border-gray-800">
               <span className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 {darkMode ? <Moon className="w-4 h-4 text-emerald-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
-                Theme: {darkMode ? "Dark Mode 🌙" : "Light Mode ☀️"}
+                {darkMode ? t("navThemeDark") : t("navThemeLight")}
               </span>
               <motion.button
                 onClick={() => setDarkMode(!darkMode)}
@@ -502,7 +516,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="w-full py-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold text-xs text-center border border-red-200 dark:border-red-900/50 flex items-center justify-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
-                Log Out ({user.name})
+                {t("navLogOut")} ({user.name})
               </button>
             </div>
           ) : (
@@ -514,7 +528,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-extrabold text-xs text-center shadow-md shadow-emerald-600/20"
               >
-                Sign In / Login 🔑
+                {t("navSignIn")}
               </button>
             </div>
           )}
@@ -523,3 +537,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+

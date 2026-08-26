@@ -36,10 +36,8 @@ import {
   FAQS,
 } from "./data/initialData";
 import { Course, User, PricingPlan, PaymentReceipt, QuizResult } from "./types";
-import { useToast } from "./context/ToastContext";
 
 export default function App() {
-  const { toast } = useToast();
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return (
       window.matchMedia &&
@@ -211,22 +209,11 @@ export default function App() {
   };
 
   const handleToggleWishlist = (courseId: string) => {
-    const isAdding = !wishlistIds.includes(courseId);
     setWishlistIds((prev) =>
-      isAdding ? [...prev, courseId] : prev.filter((id) => id !== courseId)
+      prev.includes(courseId)
+        ? prev.filter((id) => id !== courseId)
+        : [...prev, courseId]
     );
-    const targetCourse = coursesList.find((c) => c.id === courseId);
-    if (isAdding) {
-      toast.info(
-        "Saved to Wishlist 💖",
-        `"${targetCourse?.title || "Course"}" added to your saved favorites.`
-      );
-    } else {
-      toast.info(
-        "Removed from Wishlist",
-        `"${targetCourse?.title || "Course"}" removed from your favorites.`
-      );
-    }
   };
 
   const getEnrollmentStatus = (courseId: string): "approved" | "pending_approval" | "not_enrolled" => {
@@ -241,7 +228,6 @@ export default function App() {
     if (status === "approved") {
       // Already enrolled, open details or resume
       setSelectedCourse(course);
-      toast.info("Welcome Back! 📖", `Opening curriculum for ${course.title}`);
     } else {
       // Fee payment required -> Open payment receipt modal
       setShowPaymentModalForCourse(course);
@@ -254,11 +240,6 @@ export default function App() {
     if (!enrolledCourseIds.includes(newReceipt.courseId)) {
       setEnrolledCourseIds((curr) => [...curr, newReceipt.courseId]);
     }
-    toast.success(
-      "Enrollment Successful! 🎉",
-      `Payment submitted for "${newReceipt.courseTitle}". Full access unlocked!`,
-      { duration: 6000 }
-    );
     fetch("/api/receipts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -269,7 +250,7 @@ export default function App() {
   const handleApproveReceipt = (receiptId: string) => {
     const target = receipts.find((r) => r.id === receiptId);
     if (target) {
-      const emailToast: EmailToast = {
+      const toast: EmailToast = {
         id: `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         studentName: target.studentName,
         studentEmail: target.studentEmail,
@@ -278,11 +259,7 @@ export default function App() {
         transactionRef: target.transactionRef,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
-      setEmailToasts((prev) => [emailToast, ...prev]);
-      toast.success(
-        "Payment Approved! ✅",
-        `Access granted to ${target.studentName} for "${target.courseTitle}".`
-      );
+      setEmailToasts((prev) => [toast, ...prev]);
     }
 
     setReceipts((prev) =>
@@ -370,10 +347,7 @@ export default function App() {
       setShowAuthModal(true);
     } else {
       setUser((prev) => (prev ? { ...prev, plan: plan.id as any } : null));
-      toast.achievement(
-        "Plan Upgraded! 🚀",
-        `Success! You have unlocked full access with the ${plan.name} plan.`
-      );
+      alert(`Success! You have upgraded to the ${plan.name} plan.`);
     }
   };
 

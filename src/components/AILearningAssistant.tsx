@@ -18,6 +18,7 @@ import {
   Compass,
 } from "lucide-react";
 import { QuizQuestion, CodeReviewResult, ProjectIdea } from "../types";
+import { useLanguage } from "../context/LanguageContext";
 
 interface AILearningAssistantProps {
   onOpenCareerRoadmap?: () => void;
@@ -26,7 +27,18 @@ interface AILearningAssistantProps {
 export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
   onOpenCareerRoadmap,
 }) => {
+  const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"chat" | "quiz" | "code" | "projects">("chat");
+
+  const getTutorInitialMessage = (lang: string) => {
+    if (lang === "om") {
+      return "Akkam! 🇪🇹 Ani Barsiisaa AI Yacob ti. Barnoota saganteessuu (coding), AI, dizaayinii UI, ykn gaaffii barnootaa keessan irratti akkamitti isin gargaaruu danda'a?";
+    }
+    if (lang === "am") {
+      return "ሰላም! 🇪🇹 እኔ የያዕቆብ AI አስጠኚ ነኝ። በኮዲንግ፣ AI፣ UI ዲዛይን ወይም በኮርስ ትምህርቶችዎ ላይ ዛሬ በምን ልርዳዎት?";
+    }
+    return "Hello! 🇪🇹 I am your Yacob AI Tutor. How can I assist you with your coding, AI, UI design, or course study today?";
+  };
 
   // Chat State
   const [chatInput, setChatInput] = useState("");
@@ -35,7 +47,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
   >([
     {
       sender: "ai",
-      text: "Hello! I am your Yacob AI Tutor. How can I assist you with your coding, AI, UI design, or course study today?",
+      text: getTutorInitialMessage(language),
       timestamp: "Just now",
     },
   ]);
@@ -77,7 +89,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
       const res = await fetch("/api/ai-tutor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userText }),
+        body: JSON.stringify({ message: userText, language }),
       });
       const data = await res.json();
       setChatMessages((prev) => [
@@ -89,7 +101,12 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
         ...prev,
         {
           sender: "ai",
-          text: "Sorry, I had trouble connecting to the AI Tutor server. Please try again!",
+          text:
+            language === "om"
+              ? "Rakkoon qunnameera. Maaloo deebisaatii yaalaatii!"
+              : language === "am"
+              ? "ይቅርታ፣ ከAI አስጠኚ ሰርቨር ጋር መገናኘት አልተቻለም። እባክዎ እንደገና ይሞክሩ!"
+              : "Sorry, I had trouble connecting to the AI Tutor server. Please try again!",
           timestamp: time,
         },
       ]);
@@ -107,7 +124,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: quizTopic }),
+        body: JSON.stringify({ topic: quizTopic, language }),
       });
       const data = await res.json();
       if (data.quiz) {
@@ -127,7 +144,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
       const res = await fetch("/api/code-review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: codeSnippet, language: "TypeScript" }),
+        body: JSON.stringify({ code: codeSnippet, language: "TypeScript", responseLang: language }),
       });
       const data = await res.json();
       if (data.review) {
@@ -147,7 +164,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
       const res = await fetch("/api/project-ideas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ track: "Full Stack AI Development" }),
+        body: JSON.stringify({ track: "Full Stack AI Development", language }),
       });
       const data = await res.json();
       if (data.projects) {
@@ -174,36 +191,41 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
             <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Next-Gen AI Tutor Engine</span>
+            <span>{t("aiTutorBadge")}</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
-            Meet Your Personal <span className="text-emerald-400">AI Tutor</span>
+            {t("aiTutorTitle")} <span className="text-emerald-400">{t("aiTutorHighlight")}</span>
           </h2>
           <p className="text-gray-400 text-sm sm:text-base">
-            Get instant 24/7 code reviews, custom quizzes, homework answers, and portfolio project suggestions powered by Gemini 3.6 Flash.
+            {t("aiTutorSubtitle")}
           </p>
 
           {/* Feature Badges Requested in Prompt */}
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs">
-            {["24/7 AI Chat", "Homework Help", "Quiz Generator", "Code Review", "Project Suggestions", "Voice Assistant"].map(
-              (f, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-1 rounded-full bg-gray-900 border border-gray-800 text-emerald-300 font-semibold flex items-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  {f}
-                </span>
-              )
-            )}
+            {[
+              t("aiFeatureChat"),
+              t("aiFeatureHomework"),
+              t("aiFeatureQuiz"),
+              t("aiFeatureCode"),
+              t("aiFeatureProjects"),
+              t("aiFeatureVoice"),
+            ].map((f, i) => (
+              <span
+                key={i}
+                className="px-3 py-1 rounded-full bg-gray-900 border border-gray-800 text-emerald-300 font-semibold flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                {f}
+              </span>
+            ))}
           </div>
         </div>
 
         {/* Main Glassmorphic Interactive Console */}
         <div className="bg-gray-900/80 border border-gray-800 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl">
           {/* Top Console Navigation */}
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-800 bg-gray-950/60 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap overflow-x-auto max-w-full pb-1 sm:pb-0">
+          <div className="px-6 py-4 border-b border-gray-800 bg-gray-950/60 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveTab("chat")}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
@@ -213,7 +235,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
                 }`}
               >
                 <Bot className="w-4 h-4" />
-                24/7 AI Chat
+                {t("aiTabChat")}
               </button>
 
               <button
@@ -228,7 +250,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
                 }`}
               >
                 <Brain className="w-4 h-4" />
-                Quiz Generator
+                {t("aiTabQuiz")}
               </button>
 
               <button
@@ -240,7 +262,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
                 }`}
               >
                 <Code2 className="w-4 h-4" />
-                Code Review
+                {t("aiTabCodeReview")}
               </button>
 
               <button
@@ -255,7 +277,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
                 }`}
               >
                 <Lightbulb className="w-4 h-4" />
-                Project Ideas
+                {t("aiTabProjects")}
               </button>
 
               {onOpenCareerRoadmap && (
@@ -264,7 +286,7 @@ export const AILearningAssistant: React.FC<AILearningAssistantProps> = ({
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 text-white hover:from-emerald-500 hover:to-cyan-500 shadow-md shadow-emerald-600/30 flex items-center gap-2 transition-all transform hover:scale-105"
                 >
                   <Compass className="w-4 h-4 text-amber-300" />
-                  Career Roadmap
+                  {t("aiCareerRoadmap")}
                 </button>
               )}
             </div>

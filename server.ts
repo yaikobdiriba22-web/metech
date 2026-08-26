@@ -593,15 +593,27 @@ async function startServer() {
     });
   });
 
+  // Helper for multi-language AI instructions
+  const getLanguageInstruction = (lang?: string) => {
+    if (lang === "om" || lang === "Afaan Oromoo" || lang === "Oromo") {
+      return "\nIMPORTANT: The user has selected Afaan Oromoo. Respond naturally and fluently in Afaan Oromoo (Oromiffa) using Latin Qubee script. Code snippets should remain standard syntax with Afaan Oromoo explanations/comments.";
+    }
+    if (lang === "am" || lang === "Amharic" || lang === "አማርኛ") {
+      return "\nIMPORTANT: The user has selected Amharic (አማርኛ). Respond naturally and fluently in Amharic using Fidel (Ethiopic) script. Code snippets should remain standard syntax with Amharic explanations/comments.";
+    }
+    return "\nRespond in English with warm Ethiopian greetings (Selam 🇪🇹) where appropriate.";
+  };
+
   // --- Customer Assistant AI Endpoint ---
   app.post("/api/ai-assistant", async (req, res) => {
     try {
-      const { message, history } = req.body;
+      const { message, history, language = "en" } = req.body;
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
       }
 
       const ai = getGenAI();
+      const langInstruction = getLanguageInstruction(language);
       const systemInstruction = `You are Yacob Tech Academy Customer Support AI Assistant 🤖🇪🇹.
 Your role is to assist prospective students, enrolled learners, and visitors with clear, warm, and helpful information about Yacob Tech Academy Ethiopia.
 Key platform facts:
@@ -613,8 +625,8 @@ Key platform facts:
 3. Offered Tracks: Full-Stack Web Development, AI & Machine Learning, Mobile App Dev (Flutter/React Native), Graphic Design & UI/UX, Cyber Security, Video Editing & Motion Graphics, Python Automation, Cloud Computing.
 4. Certificates: Official verifiable certificates are awarded upon course completion.
 5. Admin Portal: System administrators review payment receipts, approve student registrations, and manage learning tracks.
-
-Provide concise, friendly, helpful answers in clear English with warm Ethiopian greetings (Selam 🇪🇹) where appropriate. Use bullet points for steps or account numbers.`;
+${langInstruction}
+Provide concise, friendly, helpful answers. Use bullet points for steps or account numbers.`;
 
       const contents = history && Array.isArray(history) && history.length > 0
         ? [...history, { role: "user", parts: [{ text: message }] }]
@@ -643,17 +655,19 @@ Provide concise, friendly, helpful answers in clear English with warm Ethiopian 
   // 1. AI Tutor Endpoint
   app.post("/api/ai-tutor", async (req, res) => {
     try {
-      const { message, history, context } = req.body;
+      const { message, history, context, language = "en" } = req.body;
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
       }
 
       const ai = getGenAI();
-      const systemInstruction = `You are Yacob AI Tutor, an expert, encouraging, and highly articulate senior lead developer and academic mentor at Yacob Tech Academy.
+      const langInstruction = getLanguageInstruction(language);
+      const systemInstruction = `You are Yacob AI Tutor, an expert, encouraging, and highly articulate senior lead developer and academic mentor at Yacob Tech Academy Ethiopia.
 Your goal is to help students learn programming, AI, graphic design, cloud computing, cyber security, video editing, and business skills.
 Provide concise, clear, and well-formatted answers with practical examples and code snippets where relevant.
 Always respond with encouraging words and clear step-by-step explanations.
-${context ? `Current context or course focus: ${context}` : ""}`;
+${context ? `Current context or course focus: ${context}` : ""}
+${langInstruction}`;
 
       const contents = history && Array.isArray(history) && history.length > 0
         ? [...history, { role: "user", parts: [{ text: message }] }]
@@ -682,12 +696,14 @@ ${context ? `Current context or course focus: ${context}` : ""}`;
   // 2. AI Quiz Generator
   app.post("/api/generate-quiz", async (req, res) => {
     try {
-      const { topic, difficulty = "Intermediate" } = req.body;
+      const { topic, difficulty = "Intermediate", language = "en" } = req.body;
       const ai = getGenAI();
+      const langInstruction = getLanguageInstruction(language);
 
       const response = await ai.models.generateContent({
         model: "gemini-3.6-flash",
         contents: `Generate a 4-question multiple choice quiz on the topic of "${topic || "Web Development"}" at ${difficulty} level for a student at Yacob Tech Academy.
+${langInstruction}
 Return a JSON array of questions. Each question must have:
 - question (string)
 - options (array of 4 strings)
@@ -727,14 +743,16 @@ Return a JSON array of questions. Each question must have:
   // 3. AI Code Review Endpoint
   app.post("/api/code-review", async (req, res) => {
     try {
-      const { code, language = "TypeScript" } = req.body;
+      const { code, language = "TypeScript", responseLang = "en" } = req.body;
       if (!code) {
         return res.status(400).json({ error: "Code is required" });
       }
 
       const ai = getGenAI();
+      const langInstruction = getLanguageInstruction(responseLang);
       const prompt = `Review the following ${language} code provided by a Yacob Tech Academy student.
 Analyze it for bugs, efficiency, security, code style, and modern best practices.
+${langInstruction}
 Code to review:
 \`\`\`${language}
 ${code}
@@ -779,12 +797,14 @@ Provide feedback structured as JSON with:
   // 4. AI Project Ideas Generator
   app.post("/api/project-ideas", async (req, res) => {
     try {
-      const { skillLevel = "Intermediate", track = "Full Stack Development" } = req.body;
+      const { skillLevel = "Intermediate", track = "Full Stack Development", language = "en" } = req.body;
       const ai = getGenAI();
+      const langInstruction = getLanguageInstruction(language);
 
       const response = await ai.models.generateContent({
         model: "gemini-3.6-flash",
         contents: `Suggest 3 hands-on portfolio project ideas for a student studying "${track}" at ${skillLevel} level at Yacob Tech Academy.
+${langInstruction}
 Return a JSON array where each project has:
 - title (string)
 - description (string)
@@ -829,6 +849,7 @@ Return a JSON array where each project has:
         experienceLevel = "Beginner",
         weeklyHours = "10-15 hours/week",
         availableCourses = [],
+        language = "en",
       } = req.body;
 
       if (!careerGoal) {
@@ -836,6 +857,7 @@ Return a JSON array where each project has:
       }
 
       const ai = getGenAI();
+      const langInstruction = getLanguageInstruction(language);
 
       const courseListContext =
         Array.isArray(availableCourses) && availableCourses.length > 0
@@ -849,6 +871,7 @@ Return a JSON array where each project has:
 
       const prompt = `You are the Lead Tech Career Counselor and Chief Academic Officer at Yacob Tech Academy Ethiopia.
 A student has requested a customized step-by-step career roadmap to achieve their goal.
+${langInstruction}
 
 Student Profile:
 - Target Career Goal: ${careerGoal}

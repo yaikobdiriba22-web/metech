@@ -13,6 +13,7 @@ import {
   Compass,
   Send,
 } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
 
 interface HeroProps {
   onStartLearning: () => void;
@@ -29,6 +30,7 @@ export const Hero: React.FC<HeroProps> = ({
 }) => {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const { t } = useLanguage();
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,23 +59,21 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Top Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-sm">
               <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" />
-              <span>Next-Gen EdTech with AI Tutor 2.0</span>
+              <span>{t("heroBadge")}</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-[1.15]">
-              Upgrade Your Skills and Knowledge with{" "}
+              {t("heroTitle1")}{" "}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-400">
-                AI-Powered
+                {t("heroTitleHighlight")}
               </span>{" "}
-              Online Learning
+              {t("heroTitle2")}
             </h1>
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
-              Master Graphic Design, Programming, Artificial Intelligence, Video Editing,
-              Web Development, Digital Marketing, and Business Skills through expert-led
-              courses and an AI learning assistant.
+              {t("heroSubtitle")}
             </p>
 
             {/* Email Signup Form */}
@@ -84,7 +84,7 @@ export const Hero: React.FC<HeroProps> = ({
                   <input
                     type="email"
                     required
-                    placeholder="Enter your email address..."
+                    placeholder={t("emailPlaceholder")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none"
@@ -94,7 +94,7 @@ export const Hero: React.FC<HeroProps> = ({
                   type="submit"
                   className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold text-xs whitespace-nowrap shadow-md shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
                 >
-                  {subscribed ? "Subscribed! 🎉" : "Join Free"}
+                  {subscribed ? `${t("subscribedToast")} 🎉` : t("joinFree")}
                 </button>
               </div>
             </form>
@@ -105,7 +105,7 @@ export const Hero: React.FC<HeroProps> = ({
                 onClick={onStartLearning}
                 className="px-7 py-3.5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.03] active:scale-[0.98] transition-all flex items-center gap-2"
               >
-                Start Learning
+                {t("startLearning")}
                 <ArrowRight className="w-4 h-4" />
               </button>
 
@@ -114,7 +114,7 @@ export const Hero: React.FC<HeroProps> = ({
                 className="px-7 py-3.5 rounded-full bg-white dark:bg-gray-900 text-gray-800 dark:text-white border border-gray-200 dark:border-gray-800 font-semibold text-sm shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-emerald-500/50 transition-all flex items-center gap-2"
               >
                 <Compass className="w-4 h-4 text-emerald-500" />
-                Explore Courses
+                {t("exploreCourses")}
               </button>
 
               <button
@@ -122,7 +122,7 @@ export const Hero: React.FC<HeroProps> = ({
                 className="px-5 py-3.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-semibold text-xs hover:bg-emerald-100 transition-all flex items-center gap-2"
               >
                 <Bot className="w-4 h-4 text-emerald-500" />
-                Try AI Tutor
+                {t("tryAiTutor")}
               </button>
 
               {onOpenCareerRoadmap && (
@@ -131,7 +131,7 @@ export const Hero: React.FC<HeroProps> = ({
                   className="px-5 py-3.5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold text-xs shadow-md shadow-emerald-600/20 hover:scale-[1.03] active:scale-[0.98] transition-all flex items-center gap-2"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300" />
-                  AI Career Roadmap
+                  {t("aiCareerRoadmap")}
                 </button>
               )}
 
@@ -140,7 +140,7 @@ export const Hero: React.FC<HeroProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-3.5 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 transition-all flex items-center justify-center hover:scale-105 shadow-xs"
-                title="Telegram Group (t.me/Yacob_Tech_Academy)"
+                title={t("navTelegramGroup")}
                 aria-label="Telegram Group"
               >
                 <Send className="w-4 h-4 text-sky-500 fill-sky-500/20" />
@@ -151,21 +151,21 @@ export const Hero: React.FC<HeroProps> = ({
             <div className="pt-8 border-t border-gray-200/60 dark:border-gray-800/60 grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">15K+</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Active Students</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t("statsStudents")}</p>
               </div>
               <div>
                 <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">500+</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Expert Courses</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t("statsCourses")}</p>
               </div>
               <div>
                 <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">98%</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Completion Rate</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t("statsCompletion")}</p>
               </div>
               <div>
                 <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                   4.9 <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Student Rating</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t("statsRating")}</p>
               </div>
             </div>
           </div>
@@ -208,7 +208,7 @@ export const Hero: React.FC<HeroProps> = ({
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-bold text-gray-800 dark:text-gray-100">
-                  Live Classes
+                  {t("liveClasses")}
                 </span>
               </div>
 
@@ -219,9 +219,9 @@ export const Hero: React.FC<HeroProps> = ({
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-gray-800 dark:text-gray-100">
-                    AI Tutor
+                    {t("aiTutorFloat")}
                   </span>
-                  <span className="block text-[10px] text-gray-500">24/7 Assistance</span>
+                  <span className="block text-[10px] text-gray-500">{t("aiTutorFloatDesc")}</span>
                 </div>
               </div>
 
@@ -231,7 +231,7 @@ export const Hero: React.FC<HeroProps> = ({
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-bold text-gray-800 dark:text-gray-100">
-                  Career Mentoring
+                  {t("careerMentoring")}
                 </span>
               </div>
 
@@ -241,7 +241,7 @@ export const Hero: React.FC<HeroProps> = ({
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-bold text-gray-800 dark:text-gray-100">
-                  Certificates
+                  {t("certificatesFloat")}
                 </span>
               </div>
             </div>
@@ -251,3 +251,4 @@ export const Hero: React.FC<HeroProps> = ({
     </section>
   );
 };
+
